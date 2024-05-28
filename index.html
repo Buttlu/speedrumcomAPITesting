@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    @keyframes spin {
+      from {
+        transform: rotateZ(0deg);
+      }
+      to {
+        transform: rotateZ(360deg);
+      }
+    }
+
+    table {
+      margin-top: 15px;
+    }
+
+    div {
+      margin-top: 25px;
+    }
+
+    #level-category-buttons > button {
+      width: calc(100%/3);
+    }
+
+    #throbber {
+      visibility: hidden;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(100, 100, 100, .4);
+      position: fixed;
+      top: 0px;
+      left: 0px;
+      margin: 0;
+      z-index: 99999;
+    }
+
+    #throbber * {
+      transform-origin: center;
+      width: 100%;
+      height: 100%;
+      animation-name: spin;
+      animation-duration: 2s;
+      animation-iteration-count: infinite;
+      animation-timing-function: linear;
+    }
+
+  </style>
+  <script>
+    /* ======================================================
+      main vs secret exit:
+        response = https://www.speedrun.com/api/v1/levels/${levelid}
+        variables = fetch(response.data.links[3].uri) // https://www.speedrun.com/api/v1/levels/z98ppe7w/variables
+                                        1 = any, 2 = nomo
+        {mainExitId, secretExitId} = variables.data[1].values.values
+    ====================================================== */ 
+    const API_KEY = YOUR API KEY;
+
+    function hideThrobber() {
+      document.getElementById('throbber').style.visibility = 'hidden';
+    }
+
+    function showThrobber() {
+      document.getElementById('throbber').style.visibility = 'visible';
+    }
+
+    async function getLayerData(game) {
+      const response = await fetch(`https://www.speedrun.com/api/v1/games/ultrakill/levels`, {
+        method: "GET",
+        "X-API-Key": API_KEY,
+        "Content-Type": "application/json"
+      }).then(response => {
+        if (response.ok) return response.json();
+        throw new Error(response);
+      }).then(data => {
+        createCateGoryContent(data.data);
+      }).catch(error => {
+        console.log(error);
+      });
+    }
+
+    async function getRunData(levelid, categoryid) {
+      if (!levelid || !categoryid) return undefined;
+      const response = await fetch(`https://www.speedrun.com/api/v1/leaderboards/ultrakill/level/${levelid}/${categoryid}?top=20`, {
+        method: "GET",
+        "X-API-Key": API_KEY,
+        "Content-Type": "application/json"
+      });
+
+      return await response.json();
+    }
+
+    async function getLevelCategories(levelid) {
+      const response = await fetch(`https://www.speedrun.com/api/v1/levels/${levelid}/categories`, {
+        method: "GET",
+        "X-API-Key": API_KEY,
+        "Content-Type": "application/json"
+      });
+      return await response.json();
+    }
+
+    async function getLevelData(levelid) {
+      const response = await fetch(`https://www.speedrun.com/api/v1/levels/${levelid}`, {
+        method: "GET",
+        "X-API-Key": API_KEY,
+        "Content-Type": "application/json"
+      });
+
+      return await response.json();
+    }
+
+    async function getPlayerData(playerid) {
+      const response = await fetch(`https://www.speedrun.com/api/v1/users/${playerid}`, {
+        method: "GET",
+        "X-API-Key": API_KEY,
+        "Content-Type": "application/json"
+      });
+
+      return await response.json();
+    }
+
+    function createCateGoryContent(data) {
+      showThrobber();
+      let normalStr = '';
+      let secretStr = '';
+      let sanctumsStr = '';
+
+      normalStr = startCategoryTable();
+      secretStr = startCategoryTable();
+      sanctumsStr = startCategoryTable();
+
+      for (const entry of data) {
+        if (/\d-S/.test(entry.name)) {
+          secretStr += generateCategoryRow(entry.name, entry.id, entry.weblink);
+        } else if (/P-\d/.test(entry.name)) {
+          sanctumsStr += generateCategoryRow(entry.name, entry.id, entry.weblink);
+        } else {
+          if (/[1-9]-1/.test(entry.name)) normalStr += `</table>${startCategoryTable()}`;
+          normalStr += generateCategoryRow(entry.name, entry.id, entry.weblink);
+        }
+      }
+
+      normalStr += '</tbody></table>';
+      secretStr += '</tbody></table>';
+      sanctumsStr += '</tbody></table>';
+
+      document.getElementById('target-normal').innerHTML = normalStr;
+      document.getElementById('target-secret').innerHTML = secretStr;
+      document.getElementById('target-sanctums').innerHTML = sanctumsStr;
+      hideThrobber();
+    }
+    
+    /**
+     * Description
+     * @returns {string}
+     */
+    function startCategoryTable() {
+      return `<table border="1">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>ID</th>
+                    <th>Link</th>
+                  </tr>
+                </thead>
+                <tbody>`;
+    }
+    
+    function generateCategoryRow(name, id, link) {
+      return `<tr>
+                <td>${name}</td>
+                <td>${id}</td>
+                <td><a href="${link}" target="_blank">Link</a></td>
+                <td><button onclick="generateRunContent('${id}')">See leaderboard</button></td>
+              </tr>`;
+    }
+    
+    /**
+     * @description 
+     * @param {string} levelid ID of the level
+     * @param {string} categoryid ID of the category
+     * @returns {void}
+     */
+    async function generateRunContent(levelid, categoryid) {
+      showThrobber();
+      const levelName = await getLevelData(levelid);
+      let str = await startRunTable(levelid, levelName.data.name);
+      const runs = await getRunData(levelid, categoryid);
+      
+      if (runs) {
+        for (const run of runs.data.runs) {
+          const player = await getPlayerData(run.run.players[0].id);
+          str += generateRunRow(
+            run.place, 
+            run.run.weblink,
+            player.data.names.international, 
+            player.data.weblink,
+            run.run.times.primary_t,
+            run.run.videos.links[0].uri, 
+            run.run.comment
+          );
+        }
+      }
+      
+      str += '</tbody></table>'
+      document.getElementById('target-runs').innerHTML = str;
+
+      if (document.getElementById('level-category-buttons')) {
+        for (const btn of document.getElementById('level-category-buttons').children) {
+          if (btn.id == categoryid) btn.style.backgroundColor = 'red';
+        }
+      }
+      
+      hideThrobber();
+    }
+
+    async function startRunTable(levelid, levelName) {
+      let str = `<table border="1">
+        <thead>
+          <tr><th colspan="5">${levelName}</th></tr>
+          <tr><th colspan="5" id="level-category-buttons">`;
+
+      const categories = await getLevelCategories(levelid);
+      for (const category of categories.data) {
+        str += `<button id="${category.id}" onclick="generateRunContent('${levelid}', '${category.id}')">${category.name}</button>`;
+      }
+
+      str += `</th></tr>
+              <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Time</th>
+                <th>Video</th>
+                <th>Comment</th>
+                </tr>
+            </thead>
+            <tbody>`;
+      
+      return await str;
+    }
+
+      /**
+       * Description
+       * @param {string} rank
+       * @param {string} runLink
+       * @param {string} playerName
+       * @param {string} playerLink
+       * @param {string} time
+       * @param {string} video
+       * @param {string} comment
+       * @returns {any}
+       */
+      function generateRunRow(rank, runLink, playerName, playerLink, time, video, comment) {
+      const time_sections = time.toString().split('.');
+      return `<tr>
+                <td><a href="${runLink}">${rank}</a></td>
+                <td><a href="${playerLink}" target="_blank">${playerName}</a></td>
+                <td>${time_sections[0]}s ${time_sections[1]}ms</td>
+                <td><a href="${video}" target="_blank">Link</a></td>
+                <td>${comment}</td>
+              </tr>`;
+    }
+
+  </script>        
+</head>
+<body>
+
+  <div id="throbber">
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-loader-2" width="44" height="44" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M12 3a9 9 0 1 0 9 9" />
+    </svg>
+  </div>
+
+  <button onclick="getLayerData('ultrakill');">Call the ultrakill API</button>
+  
+  <div id="target-normal"></div>
+  <div id="target-secret"></div>
+  <div id="target-sanctums"></div>
+
+  <div id="target-runs"></div>
+</body>
+</html>
