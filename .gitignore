@@ -130,4 +130,4 @@ dist
 .pnp.*
 
 # api keys
-API_KEY.*
+*/API_KEY.*
