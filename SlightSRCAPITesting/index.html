@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="API_KEYS.js" defer></script>
+  <script src="api_access.js" defer></script>
+  <script src="script.js" defer></script>
+  <style>
+    form {
+      border: 1px solid black;
+      padding: 5px;
+    }
+  </style>
+</head>
+
+<body onload="generateDropdown();">
+  <form>
+    <label>
+      Select level <select name="level">
+        <option>-----------------------------------</option>
+      </select>
+    </label>
+    <br>
+    <br>
+    <label>
+      Exit<br>
+      <label><input type="radio" name="exit" value="Secret Exit">Secret Exit</label><br>
+      <label><input type="radio" name="exit" value="Main Exit">Main Exit</label>
+    </label>
+    <br>
+    <br>
+    <label>
+      NoMo <input type="checkbox" name="nomo">
+    </label>
+    <br>
+    <br>
+    <button type="submit">Submit</button>
+  </form>
+</body>
+
+</html>
