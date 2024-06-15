@@ -28,7 +28,7 @@ form.addEventListener('submit', async e => {
 
 	const levelid = category.scope.level;
 
-	const leaderboard = await getLeaderBoard(levelid, categoryid, id, exitid);
+	const leaderboard = await getLeaderBoard(levelid, categoryid, id, exitid, 10);
 
 	const runs = leaderboard.data.runs;
 
@@ -46,6 +46,7 @@ form.addEventListener('submit', async e => {
 	}
 
 	console.log(name, exit, lb);
+	generateTable(lb, name, exit);
 });
 
 async function generateDropdown() {

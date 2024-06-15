@@ -14,6 +14,46 @@
       padding: 5px;
     }
   </style>
+  <script>
+    function generateTableStart(name, exit) {
+      return `
+      <table border="1">
+        <thead>
+          <tr>
+            <th colspan="4">${name}</th>            
+          </tr>
+          <tr>
+            <th colspan="4">${exit}</th>            
+          </tr>
+          <tr>
+            <th>Place</th>
+            <th>Name</th>
+            <th>Time</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody>`;
+    }
+
+    function generateTableRow(place, name, time, link) {
+      return `
+      <tr>
+        <td>${place}</td>
+        <td>${name}</td>
+        <td>${+time.toFixed(3)}</td>
+        <td><a href="${link}" target="_blanc">link</a></td>
+      </tr>`;
+    }
+
+    function generateTable(data, name, exit) {
+      let str = generateTableStart(name, exit);
+      for (const entry of data) {
+        str += generateTableRow(entry.place, entry.name, entry.time, entry.link);
+      }
+      str += `</tbody></table>`;
+      document.getElementById('table').innerHTML = str;
+    }
+  </script>
 </head>
 
 <body onload="generateDropdown();">
@@ -39,6 +79,7 @@
     <br>
     <button type="submit">Submit</button>
   </form>
+  <div id="table"></div>
 </body>
 
 </html>

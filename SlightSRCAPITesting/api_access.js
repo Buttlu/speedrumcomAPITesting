@@ -8,8 +8,8 @@ async function getVariables() {
 	return await response.json();
 }
 
-async function getLeaderBoard(levelid, categoryid, id, exitid) {
-	const response = await fetch(`https://www.speedrun.com/api/v1/leaderboards/369p3p81/level/${levelid}/${categoryid}?var-${id}=${exitid}&top=5`, {
+async function getLeaderBoard(levelid, categoryid, id, exitid, top = 5) {
+	const response = await fetch(`https://www.speedrun.com/api/v1/leaderboards/369p3p81/level/${levelid}/${categoryid}?var-${id}=${exitid}&top=${top}`, {
 		method: "GET",
 		"X-API-Key": KEY,
 		"Content-Type": "application/json"
